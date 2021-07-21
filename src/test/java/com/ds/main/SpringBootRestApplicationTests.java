@@ -1,4 +1,4 @@
-package com.newgen.springbootrest;
+package com.ds.main;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
