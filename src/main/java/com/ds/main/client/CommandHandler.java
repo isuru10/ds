@@ -56,7 +56,7 @@ public class CommandHandler {
             case "leave":
                 node.leave();
                 break;
-            case "download":
+            case "downloadFile":
                 try {
                     String[] commandArr = command.split(" ");
                     String ip = commandArr[1];

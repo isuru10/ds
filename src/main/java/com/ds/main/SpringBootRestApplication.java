@@ -61,9 +61,9 @@ public class SpringBootRestApplication {
         Gossip gossip = new Gossip(node1);
         gossip.run();
 
-        //start the pulse thread
-        Pulse pulse = new Pulse(node1);
-        pulse.run();
+        //start the heartbeat thread
+        Heartbeat heartbeat = new Heartbeat(node1);
+        heartbeat.run();
 
         //start the active checker thread
         ActiveChecker activeChecker = new ActiveChecker(node1);
