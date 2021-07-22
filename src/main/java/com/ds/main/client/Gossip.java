@@ -8,8 +8,8 @@ import java.util.TimerTask;
 
 public class Gossip extends Thread {
 
-    public static   int gossipThreadStartingDelay=1000; //10s
     public static   int gossipPeriod =10000; //10s
+    public static   int threadStartingDelay=1000; //10s
     public static Node node;
     public static DatagramSocket ds;
     public static DatagramSocket socket;
@@ -25,7 +25,8 @@ public class Gossip extends Thread {
             sendGossip();
     }
 
-    public static void sendGossip(){ //scheduler to schedule gossip sending interval
+    public static void sendGossip(){
+        //The scheduler to schedule gossip sending interval
         Timer timer=new Timer();
         TimerTask task=new TimerTask() {
             @Override
@@ -33,35 +34,35 @@ public class Gossip extends Thread {
                 sendGossipsToNeighbours();
             }
         };
-        timer.schedule(task,gossipThreadStartingDelay, gossipPeriod);
+        timer.schedule(task,threadStartingDelay, gossipPeriod);
     }
 
-    public static void sendGossipsToNeighbours(){ //send gossip to neighbours asking for IPs
+    public static void sendGossipsToNeighbours(){
+        //send gossip to neighbours asking for IPs
         if (node.addedNeighbours.size() <3 ) {
 
-            ArrayList<Node> allNeighbours = new ArrayList<>();
-            allNeighbours.addAll(node.addedNeighbours);
+            ArrayList<Node> neighbours = new ArrayList<>();
+            neighbours.addAll(node.addedNeighbours);
 
-
-            for (Node node : allNeighbours) {
+            for (Node node : neighbours) {
                 sendNeighboursToNeighbourMessage(node);
             }
-
         }
     }
 
-    public static void sendNeighboursToNeighbourMessage(Node nodeToBeSent){ //gossip request create
-        InetAddress myip = null;
+    public static void sendNeighboursToNeighbourMessage(Node nodeToBeSent){
+        //gossip request create
+        InetAddress ipaddr = null; //myip
         try {
             ds = new DatagramSocket();
-            myip = InetAddress.getByName(nodeToBeSent.getIp());
+            ipaddr = InetAddress.getByName(nodeToBeSent.getIp());
             int port = nodeToBeSent.getPort();
             String request="GOSSIP "+node.ip+" "+node.port;
             String length = String.valueOf(request.length()+5);
             length = String.format("%4s", length).replace(' ', '0');
             request = length + " " + request;
             byte[] msg = request.getBytes();
-            DatagramPacket packet = new DatagramPacket(msg, msg.length, myip, port);
+            DatagramPacket packet = new DatagramPacket(msg, msg.length, ipaddr, port);
             ds.send(packet);
 
         } catch (UnknownHostException e) {
@@ -70,5 +71,4 @@ public class Gossip extends Thread {
             e.printStackTrace();
         }
     }
-
 }
