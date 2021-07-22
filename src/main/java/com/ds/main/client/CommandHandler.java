@@ -6,13 +6,13 @@ import java.security.NoSuchAlgorithmException;
 public class CommandHandler {
     private Node node;
 
-    public CommandHandler(Node node){
+    public CommandHandler(Node node) {
         this.node = node;
     }
 
-    public void execute(String command) throws IOException, NoSuchAlgorithmException {
-        switch (command.split(" ")[0]){
-            case "routing":
+    public void handleCommand(String command) throws IOException, NoSuchAlgorithmException {
+        switch (command.split(" ")[0]) {
+            case "routes":
                 node.showRoutingTable();
                 break;
             case "unregister":
@@ -36,44 +36,45 @@ public class CommandHandler {
                     e.printStackTrace();
                 }
                 break;
+            case "files":
+                node.showResources();
+                break;
             case "search":
                 try {
                     String[] commandArr = command.split(" ");
                     String fileName = "";
-                    for(int i=1; i<commandArr.length; i++)
-                        fileName += " "+ commandArr[i];
-                    System.out.println("Searching:"+fileName.trim());
+                    for (int i = 1; i < commandArr.length; i++)
+                        fileName += " " + commandArr[i];
+                    System.out.println("Searching:" + fileName.trim());
                     node.search(fileName.trim());
                 } catch (IOException e) {
                     e.printStackTrace();
-                } catch (ArrayIndexOutOfBoundsException ex){
+                } catch (ArrayIndexOutOfBoundsException ex) {
                     System.out.println("Illegal command");
                 }
-                break;
-            case "files":
-                node.showResources();
                 break;
             case "leave":
                 node.leave();
                 break;
             case "downloadFile":
                 try {
-                    String[] commandArr = command.split(" ");
-                    String ip = commandArr[1];
-                    String port = commandArr[2];
-                    String fileName = "";
-                    for (int i = 3; i < commandArr.length; i++)
-                        fileName += commandArr[i] + "%20";
-                    fileName = fileName.substring(0, fileName.length() - 3);
-                    System.out.println(fileName);
-                    node.download(ip, port, fileName);
-                }catch (ArrayIndexOutOfBoundsException ex){
-                    System.out.println("Illegal command");
-                } catch (StringIndexOutOfBoundsException ex){
+                    String[] commandArgs = command.split(" ");
+                    String ip = commandArgs[1];
+                    String port = commandArgs[2];
+                    StringBuilder fileName = new StringBuilder();
+
+                    for (int i = 3; i < commandArgs.length; i++)
+                        fileName.append(commandArgs[i]).append("%20");
+
+                    fileName = new StringBuilder(fileName.substring(0, fileName.length() - 3));
+                    System.out.println("File name: " + fileName);
+                    node.download(ip, port, fileName.toString());
+                } catch (ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException ex) {
                     System.out.println("Illegal command");
                 }
+                break;
             default:
-                System.out.println("False command!");
+                System.out.println("Command: " + command.split(" ")[0] + " not found!");
         }
     }
 }

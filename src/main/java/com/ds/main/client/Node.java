@@ -10,58 +10,57 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-public class Node implements Runnable{
+public class Node implements Runnable {
 
     public String ip;
     public int port;
     public String username;
-    public ArrayList<Node> myNeighbours = new ArrayList<>();
-    public HashMap<String,Node> availableNeighbours = new HashMap<>();
+    public ArrayList<Node> addedNeighbours = new ArrayList<>();
+    public HashMap<String, Node> availableNeighbours = new HashMap<>();
     public ArrayList<String> blacklist = new ArrayList<>();
     private ArrayList<String> resources = new ArrayList<>();
     DatagramSocket ds;
-    public  int routingTableStatus=0;
-    public  int gossipSendingStatus=0;
     public DatagramSocket socket = null;
 
     @Autowired
     ServletContext context;
 
 
-    public  Node(String ip, int port, String username){
+    public Node(String ip, int port, String username) {
         this.ip = ip;
         this.port = port;
         this.username = username;
     }
 
-    public  Node(String ip, int port){
+    public Node(String ip, int port) {
         this.ip = ip;
         this.port = port;
     }
 
-    public void addResource(String name, String url){
+    public void addResource(String name, String url) {
         this.resources.add(name);
     }
 
-    public  boolean isEqual(String ip,int port){
-        if(this.port==port && this.ip.equals(ip)){
+    public boolean isEqual(String ip, int port) {
+        if (this.port == port && this.ip.equals(ip)) {
             return true;
-        }return false;
+        }
+        return false;
     }
 
-    public String getKey(){
-        return ip+":"+port;
+    public String getKey() {
+        return ip + ":" + port;
     }
 
     /**
-     * @desc  clean a given array by removing empty strings
      * @param arr
      * @return cleaned array
+     * @desc clean a given array by removing empty strings
      */
-    private ArrayList<String> cleanArray(String[] arr){
+    private ArrayList<String> cleanArray(String[] arr) {
         ArrayList<String> cleanedList = new ArrayList<>();
-        for(String i:arr){
-            if(!i.trim().equals(""))
+        for (String i : arr) {
+            if (!i.trim().equals(""))
                 cleanedList.add(i.trim());
         }
 
@@ -69,15 +68,15 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc check whether it is a neighbour or not
      * @param ip
      * @param port
      * @return
+     * @desc check whether it is a neighbour or not
      */
-    private Boolean isNeighbour(String ip, int port){
+    private Boolean isNeighbour(String ip, int port) {
         boolean found = false;
-        for(Node i:myNeighbours){
-            if(i.getIp().equals(ip) && i.getPort()==port){
+        for (Node i : addedNeighbours) {
+            if (i.getIp().equals(ip) && i.getPort() == port) {
                 found = true;
                 break;
             }
@@ -126,51 +125,51 @@ public class Node implements Runnable{
         try {
             socket = new DatagramSocket(this.port);
 
-            while (true){
+            while (true) {
                 byte[] buffer = new byte[65536];
                 DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
                 try {
 
                     socket.receive(incoming);
-                }catch (IOException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
 
                 byte[] data = incoming.getData();
                 String received = new String(data, 0, incoming.getLength());
                 StringTokenizer st = new StringTokenizer(received, " ");
-                String encodeLength= st.nextToken();
+                String encodeLength = st.nextToken();
 
-                switch (st.nextToken()){
+                switch (st.nextToken()) {
 
                     //join message received
                     case "JOIN":
                         String newNodeIp = received.split(" ")[2];
                         int newNodePort = Integer.parseInt(received.split(" ")[3]);
 
-                        if(!isNeighbour(newNodeIp, newNodePort)){
+                        if (!isNeighbour(newNodeIp, newNodePort)) {
                             addToRoutingTable(new Node(newNodeIp, newNodePort));
                         }
                         break;
 
-                     //search message received
+                    //search message received
                     case "SER":
                         String[] splittedCommand = received.split("\"");
                         String command = splittedCommand[0];
                         String fileName = splittedCommand[1];
                         String hops = splittedCommand[2].trim();
-                        int newHops = Integer.parseInt(hops)+1;
+                        int newHops = Integer.parseInt(hops) + 1;
 
-                        ArrayList<String> foundFiles=new ArrayList<>();
+                        ArrayList<String> foundFiles = new ArrayList<>();
                         //search by single word as given
-                        for (String file_Name:this.resources){
-                            for (String word:file_Name.split(" ")){ //for space separated words in selected files
-                                if (word.equalsIgnoreCase(fileName)){
+                        for (String file_Name : this.resources) {
+                            for (String word : file_Name.split(" ")) { //for space separated words in selected files
+                                if (word.equalsIgnoreCase(fileName)) {
                                     foundFiles.add(file_Name);
                                     break;
                                 }
                             }
-                            if (file_Name.equalsIgnoreCase(fileName)){ //chek for hall file name in selected files
+                            if (file_Name.equalsIgnoreCase(fileName)) { //chek for hall file name in selected files
                                 foundFiles.add(file_Name);
                                 break;
                             }
@@ -179,9 +178,9 @@ public class Node implements Runnable{
                         Set<String> searchResults = new HashSet<>(foundFiles);
 
                         //if did find file in current node ask neighbours to search
-                        if(foundFiles.isEmpty()) {
+                        if (foundFiles.isEmpty()) {
                             try {
-                                if(newHops<=4)      //setting hop limit in flooding
+                                if (newHops <= 4)      //setting hop limit in flooding
                                     this.askNeighboursToSearch(fileName, command.split(" ")[2], command.split(" ")[3], String.valueOf(newHops));
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -205,10 +204,10 @@ public class Node implements Runnable{
                         String foundIp = resultCommand.split(" ")[3];
                         String foundPort = resultCommand.split(" ")[4];
                         String foundHops = resultCommand.split(" ")[5];
-                        System.out.println(resultFiles+" results found from "+foundIp+":"+foundPort+" in "+foundHops+" hops");
+                        System.out.println(resultFiles + " results found from " + foundIp + ":" + foundPort + " in " + foundHops + " hops");
                         System.out.print("File Names:");
-                        for(int i=1; i<cleanedArr.size(); i++){
-                            System.out.print(cleanedArr.get(i)+" ");
+                        for (int i = 1; i < cleanedArr.size(); i++) {
+                            System.out.print(cleanedArr.get(i) + " ");
                         }
                         System.out.println("\n----------------------------------------------------");
                         break;
@@ -219,17 +218,17 @@ public class Node implements Runnable{
                         int port = Integer.parseInt(received.split(" ")[3]);
                         int removingIndex = -1;
                         //search if current node has the neighbour
-                        for(int i =0; i<myNeighbours.size(); i++){
-                            if(myNeighbours.get(i).getIp().equals(ip) && myNeighbours.get(i).getPort() == port){
+                        for (int i = 0; i < addedNeighbours.size(); i++) {
+                            if (addedNeighbours.get(i).getIp().equals(ip) && addedNeighbours.get(i).getPort() == port) {
                                 removingIndex = i;
                             }
                         }
                         //if have, remove from routing table
-                        if(removingIndex>=0){
-                            myNeighbours.remove(removingIndex);
-                            System.out.println("removed node "+ip+":"+port);
+                        if (removingIndex >= 0) {
+                            addedNeighbours.remove(removingIndex);
+                            System.out.println("removed node " + ip + ":" + port);
                             String request = "LEAVEOK 0";
-                            String length = String.valueOf(request.length()+5);
+                            String length = String.valueOf(request.length() + 5);
                             length = String.format("%4s", length).replace(' ', '0');
                             request = length + " " + request;
                             byte[] msg = request.getBytes();
@@ -240,7 +239,7 @@ public class Node implements Runnable{
 
                                 DatagramPacket packet = new DatagramPacket(msg, msg.length, receiverIP, port);
                                 ds.send(packet);        //send response
-                            }catch (IOException e){
+                            } catch (IOException e) {
                                 e.printStackTrace();
                             }
                         } else {
@@ -251,12 +250,12 @@ public class Node implements Runnable{
                     //leave OK message received
                     case "LEAVEOK":
                         if (received.split(" ")[2].equals("0"))
-                            System.out.println(this.ip+":"+this.port+" Leave succeful");
+                            System.out.println(this.ip + ":" + this.port + " Leave succeful");
                         else
                             System.out.println("Leave failed!");
                         break;
 
-                     //gossip message received
+                    //gossip message received
                     case "GOSSIP":
                         sendNeighbours(st);
                         break;
@@ -280,26 +279,26 @@ public class Node implements Runnable{
                         break;
                 }
             }
-        }catch (BindException ex){
+        } catch (BindException ex) {
             System.out.println("This is already registered! Try a different one or un-regiter first");
-        }catch (SocketException e) {
+        } catch (SocketException e) {
             e.printStackTrace();
         }
     }
 
     /**
-     * @desc node regstering method
      * @throws IOException
+     * @desc node regstering method
      */
     public void register() throws IOException {
         ds = new DatagramSocket();
-        String msg = "REG "+this.ip+" "+this.port+" "+this.username;
-        String length = String.valueOf(msg.length()+5);
+        String msg = "REG " + this.ip + " " + this.port + " " + this.username;
+        String length = String.valueOf(msg.length() + 5);
         length = String.format("%4s", length).replace(' ', '0');
         msg = length + " " + msg;
         byte b[] = msg.getBytes();     //request to register
 
-        InetAddress ip = InetAddress.getByName("192.168.1.207");
+        InetAddress ip = InetAddress.getByName("192.168.8.101");
         int port = 55555;
 
         DatagramPacket packet = new DatagramPacket(b, b.length, ip, port);
@@ -313,18 +312,18 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc node unregister method
      * @throws IOException
+     * @desc node unregister method
      */
-    public void unregister() throws IOException{
+    public void unregister() throws IOException {
         ds = new DatagramSocket();
-        String msg = "UNREG "+this.ip+" "+this.port+" "+this.username;
-        String length = String.valueOf(msg.length()+5);
+        String msg = "UNREG " + this.ip + " " + this.port + " " + this.username;
+        String length = String.valueOf(msg.length() + 5);
         length = String.format("%4s", length).replace(' ', '0');
         msg = length + " " + msg;
         byte b[] = msg.getBytes();     //request to register
 
-        InetAddress ip = InetAddress.getByName("192.168.1.207");
+        InetAddress ip = InetAddress.getByName("192.168.8.101");
         int port = 55555;
 
         DatagramPacket packet = new DatagramPacket(b, b.length, ip, port);
@@ -337,28 +336,28 @@ public class Node implements Runnable{
         String responseMsg = new String(buffer, 0, response.getLength());
         String responseMsgArr[] = responseMsg.split(" ");
 
-        if(responseMsgArr[1].equals("UNROK")){
+        if (responseMsgArr[1].equals("UNROK")) {
             if (responseMsgArr[2].equals("0"))
-                System.out.println(this.ip+":"+this.port+" UNREGISTER succeful");
+                System.out.println(this.ip + ":" + this.port + " UNREGISTER succeful");
             else
                 System.out.println("UNREGISTER succesful!");
         }
     }
 
     /**
-     * @desc search a given file
      * @param name
      * @throws IOException
+     * @desc search a given file
      */
     public void search(String name) throws IOException {
-        String msg = "SER "+this.ip+" "+this.port+" \""+name+"\" 0";
-        String length = String.valueOf(msg.length()+5);
+        String msg = "SER " + this.ip + " " + this.port + " \"" + name + "\" 0";
+        String length = String.valueOf(msg.length() + 5);
         length = String.format("%4s", length).replace(' ', '0');
         msg = length + " " + msg;
         byte b[] = msg.getBytes();
 
         //send message to neighbours to seearch
-        for(Node n: myNeighbours){
+        for (Node n : addedNeighbours) {
             int port = n.getPort();
             InetAddress ip = InetAddress.getByName(n.getIp());
             DatagramPacket packet = new DatagramPacket(b, b.length, ip, port);
@@ -367,16 +366,16 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc ask neighbours to search with flooding
      * @param fileName
      * @param searcherIp
      * @param searcherPort
      * @param hops
      * @throws IOException
+     * @desc ask neighbours to search with flooding
      */
-    public void askNeighboursToSearch(String  fileName, String searcherIp, String searcherPort, String hops) throws IOException{
-        String request = "SER "+searcherIp+" "+searcherPort+" \""+fileName+"\" "+hops;
-        String length = String.valueOf(request.length()+5);
+    public void askNeighboursToSearch(String fileName, String searcherIp, String searcherPort, String hops) throws IOException {
+        String request = "SER " + searcherIp + " " + searcherPort + " \"" + fileName + "\" " + hops;
+        String length = String.valueOf(request.length() + 5);
         length = String.format("%4s", length).replace(' ', '0');
         request = length + " " + request;
         byte b[] = request.getBytes();
@@ -384,10 +383,10 @@ public class Node implements Runnable{
         ds = new DatagramSocket();
 
 
-        for(Node n: myNeighbours){
+        for (Node n : addedNeighbours) {
             int port = n.getPort();
             InetAddress ip = InetAddress.getByName(n.getIp());
-            if(port!=Integer.parseInt(searcherPort) || !n.getIp().equals(searcherIp)) {
+            if (port != Integer.parseInt(searcherPort) || !n.getIp().equals(searcherIp)) {
                 DatagramPacket packet = new DatagramPacket(b, b.length, ip, port);
                 ds.send(packet);
             }
@@ -395,22 +394,22 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc send the found file to requester
      * @param fileName
      * @param receiverIP
      * @param receiverPort
      * @param hops
      * @throws IOException
+     * @desc send the found file to requester
      */
-    public void sendFilePathToRequester(Set<String> fileName, String receiverIP, String receiverPort, String hops) throws IOException{
-        String filesStr="";
+    public void sendFilePathToRequester(Set<String> fileName, String receiverIP, String receiverPort, String hops) throws IOException {
+        String filesStr = "";
 
-        for (String result: fileName){
-            filesStr+="\""+result+ "\" ";
+        for (String result : fileName) {
+            filesStr += "\"" + result + "\" ";
         }
 
-        String msg = "SEROK "+fileName.size()+" "+ip+" "+port+" "+hops+" "+filesStr;
-        String length = String.valueOf(msg.length()+5);
+        String msg = "SEROK " + fileName.size() + " " + ip + " " + port + " " + hops + " " + filesStr;
+        String length = String.valueOf(msg.length() + 5);
         length = String.format("%4s", length).replace(' ', '0');
         msg = length + " " + msg;
         byte b[] = msg.getBytes();
@@ -426,8 +425,8 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc adding the found nodes from server as neighbours
      * @throws IOException
+     * @desc adding the found nodes from server as neighbours
      */
     public void addNeighboursAfterRegister() throws IOException {
         byte[] buffer = new byte[512];
@@ -437,44 +436,44 @@ public class Node implements Runnable{
         String responseMsgArr[] = responseMsg.split(" ");
 
         //handle possible response cases
-        if(responseMsgArr[1].equals("REGOK")){
+        if (responseMsgArr[1].equals("REGOK")) {
             int availableNodes = Integer.parseInt(responseMsgArr[2]);
-            if(availableNodes == 9998){
+            if (availableNodes == 9998) {
                 System.out.println("Failed, already registered to you, unregister first");
-            } else if(availableNodes == 9999){
+            } else if (availableNodes == 9999) {
                 System.out.println("Failed, there is some error in the command");
-            }else if(availableNodes == 9997){
+            } else if (availableNodes == 9997) {
                 System.out.println("Failed, registered to another user, try a different IP and port");
-            }else if(availableNodes == 9996){
+            } else if (availableNodes == 9996) {
                 System.out.println("Failed, can’t register. BS ful");
-            }else if(availableNodes!=0){
-                for(int i=3; i<responseMsgArr.length; i+=2){
+            } else if (availableNodes != 0) {
+                for (int i = 3; i < responseMsgArr.length; i += 2) {
                     String nodeIp = responseMsgArr[i];
-                    int nodePort = Integer.parseInt(responseMsgArr[i+1]);
-                    if(!isNeighbour(nodeIp, nodePort)) {
+                    int nodePort = Integer.parseInt(responseMsgArr[i + 1]);
+                    if (!isNeighbour(nodeIp, nodePort)) {
                         addToRoutingTable(new Node(nodeIp, nodePort));
                     }
                 }
-                for(Node i:myNeighbours)
-                    System.out.println(this.port+": Neighbours"+i.toString());
-            }else{
-                System.out.println(this.port+": No neighbours yet");
+                for (Node i : addedNeighbours)
+                    System.out.println(this.port + ": Neighbours" + i.toString());
+            } else {
+                System.out.println(this.port + ": No neighbours yet");
             }
         }
 
     }
 
     /**
-     * @desc join the network
      * @throws IOException
+     * @desc join the network
      */
     public void join() throws IOException {
-        String request = "JOIN "+this.ip+" "+this.port;
-        String length = String.valueOf(request.length()+5);
+        String request = "JOIN " + this.ip + " " + this.port;
+        String length = String.valueOf(request.length() + 5);
         length = String.format("%4s", length).replace(' ', '0');
         request = length + " " + request;
         byte[] msg = request.getBytes();
-        for(Node node:myNeighbours){
+        for (Node node : addedNeighbours) {
             InetAddress ip = InetAddress.getByName(node.getIp());
             int port = node.getPort();
 
@@ -487,19 +486,19 @@ public class Node implements Runnable{
     /**
      * @desc display the routung table
      */
-    public void showRoutingTable(){
-        System.out.println("Routing table of "+ip+":"+port);
+    public void showRoutingTable() {
+        System.out.println("Routing table of " + ip + ":" + port);
         System.out.println("--------------------------------------");
-        for(Node i:myNeighbours){
-            System.out.println("IP: "+i.getIp()+"\t Post: "+i.getPort());
+        for (Node i : addedNeighbours) {
+            System.out.println("IP: " + i.getIp() + "\t Post: " + i.getPort());
         }
     }
 
     /**
      * @desc display the serving files in current node
      */
-    public void showResources(){
-        System.out.println("Stored files at "+ip+":"+port);
+    public void showResources() {
+        System.out.println("Stored files at " + ip + ":" + port);
         System.out.println("---------------------------------------");
         resources.forEach((name) -> {
             System.out.println(name);
@@ -507,41 +506,41 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc leave the network
      * @throws IOException
+     * @desc leave the network
      */
-    public void leave() throws IOException{
-        String request = "LEAVE "+this.ip+" "+this.port;
-        String length = String.valueOf(request.length()+5);
+    public void leave() throws IOException {
+        String request = "LEAVE " + this.ip + " " + this.port;
+        String length = String.valueOf(request.length() + 5);
         length = String.format("%4s", length).replace(' ', '0');
         request = length + " " + request;
         byte[] msg = request.getBytes();
         //send neighbours about leave
-        for(Node node:myNeighbours){
+        for (Node node : addedNeighbours) {
             InetAddress ip = InetAddress.getByName(node.getIp());
             int port = node.getPort();
 
             DatagramPacket packet = new DatagramPacket(msg, msg.length, ip, port);
             ds.send(packet);
         }
-        myNeighbours.clear();   //clear my neighbours
+        addedNeighbours.clear();   //clear my neighbours
         unregister();           //unregister from server
         System.exit(1);  //kill current node
     }
 
     /**
-     * @desc downloadFile file
      * @param ip
      * @param port
      * @param name
      * @throws IOException
      * @throws NoSuchAlgorithmException
+     * @desc downloadFile file
      */
     public void download(String ip, String port, String name) throws IOException, NoSuchAlgorithmException {
         try {
-            System.out.println("Startded downloading...");
+            System.out.println("Started downloading...");
             //construct URL to send files
-            URL url = new URL("http://"+ip+":"+port+"/files/downloadFile?name="+name);
+            URL url = new URL("http://" + ip + ":" + port + "/files/downloadFile?name=" + name);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");        //creating a GET request
 
@@ -559,7 +558,7 @@ public class Node implements Runnable{
             in.close();
 
             //if data received write to file
-            if(content.toString().length()>0) {
+            if (content.toString().length() > 0) {
 //                String path = "static/downloaded";
 //                ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 //                path = classLoader.getResource(path).getPath().split("target")[0].substring(1)+"src/main/resources/static/downloaded/"+name.replace("%20", " ")+".txt";
@@ -593,87 +592,87 @@ public class Node implements Runnable{
         } catch (java.net.SocketTimeoutException e) {
             System.out.println("Connection timeout! Node may have down. Try another");
             removeNeighbour(ip, Integer.parseInt(port));
-        } catch (ConnectException e){
+        } catch (ConnectException e) {
             System.out.println("Node is down. Try another!");
             removeNeighbour(ip, Integer.parseInt(port));
-        } catch (MalformedURLException ex){
+        } catch (MalformedURLException ex) {
             System.out.println("Error in the command");
-        } catch (SocketException ex){
+        } catch (SocketException ex) {
             System.out.println("Connection lost! Node may down");
-        }catch (UnknownHostException ex){
+        } catch (UnknownHostException ex) {
             System.out.println("Error in IP or PORT");
         }
     }
 
     /**
-     * @desc remove a existing neighbour
      * @param ip
      * @param port
+     * @desc remove a existing neighbour
      */
-    private void removeNeighbour(String ip, int port){
+    private void removeNeighbour(String ip, int port) {
         int removingIndex = -1;
-        for(int i =0; i<myNeighbours.size(); i++){
-            if(myNeighbours.get(i).getIp().equals(ip) && myNeighbours.get(i).getPort() == port){
+        for (int i = 0; i < addedNeighbours.size(); i++) {
+            if (addedNeighbours.get(i).getIp().equals(ip) && addedNeighbours.get(i).getPort() == port) {
                 removingIndex = i;
             }
         }
 
-        if(removingIndex>=0){
-            myNeighbours.remove(removingIndex);
+        if (removingIndex >= 0) {
+            addedNeighbours.remove(removingIndex);
         }
     }
 
     /**
-     * @desc send posessing ips to requesting node
      * @param st
+     * @desc send posessing ips to requesting node
      */
-    public void sendNeighbours(StringTokenizer st){
-        String ip_of_sender=st.nextToken();
-        int port_of_sender= Integer.parseInt(st.nextToken());
-        Node senderNode=new Node(ip_of_sender,port_of_sender,"");
+    public void sendNeighbours(StringTokenizer st) {
+        String ip_of_sender = st.nextToken();
+        int port_of_sender = Integer.parseInt(st.nextToken());
+        Node senderNode = new Node(ip_of_sender, port_of_sender, "");
         String neighboursToBeSent = "";
         int count = 0;
         ArrayList<String> nodeKeys = new ArrayList<>();
 
-        for (Node node:this.myNeighbours) {
-            nodeKeys.add(node.ip+":"+node.port);
+        for (Node node : this.addedNeighbours) {
+            nodeKeys.add(node.ip + ":" + node.port);
         }
 
-        if (!nodeKeys.contains(senderNode.getKey())){
+        if (!nodeKeys.contains(senderNode.getKey())) {
             addToRoutingTable(senderNode);
-            System.out.println("Node IP " + senderNode.ip + " Port "+senderNode.port+ " was added by Request");
+            System.out.println("Node IP " + senderNode.ip + " Port " + senderNode.port + " was added by Request");
         }
 
 
-        if(this.myNeighbours.size()>1){
-                for (Node n : this.myNeighbours) {
-                    if (!senderNode.isEqual(n.getIp(), n.getPort())) {
-                        neighboursToBeSent += n.getIp() + " " + n.getPort() + " ";
-                        count++;
-                    } else {
-                        continue;
-                    }
+        if (this.addedNeighbours.size() > 1) {
+            for (Node n : this.addedNeighbours) {
+                if (!senderNode.isEqual(n.getIp(), n.getPort())) {
+                    neighboursToBeSent += n.getIp() + " " + n.getPort() + " ";
+                    count++;
+                } else {
+                    continue;
                 }
-                neighboursToBeSent.substring(0, neighboursToBeSent.length() - 1); //remove last space
-                sendNeighboursToNeighbourMessage(senderNode,count,neighboursToBeSent);
+            }
+            neighboursToBeSent.substring(0, neighboursToBeSent.length() - 1); //remove last space
+            sendNeighboursToNeighbourMessage(senderNode, count, neighboursToBeSent);
         }
     }
 
 
     /**
-     * @desc encode gossipok message
      * @param nodeToBeSent
      * @param neighbourCount
      * @param neighboursDetails
+     * @desc encode gossipok message
      */
-    public void sendNeighboursToNeighbourMessage(Node nodeToBeSent, int neighbourCount, String neighboursDetails){
+    public void sendNeighboursToNeighbourMessage(Node nodeToBeSent, int neighbourCount, String neighboursDetails) {
         InetAddress myip = null;
         try {
 
             myip = InetAddress.getByName(nodeToBeSent.getIp());
             int port = nodeToBeSent.getPort();
-            String request="GOSSIPOK "+this.ip+" "+this.port+" "+neighbourCount+" "+neighboursDetails;
-            String length = String.valueOf(request.length()+5);
+            String request = "GOSSIPOK " + this.ip + " " + this.port + " " + neighbourCount + " " + neighboursDetails;
+            String length = String.valueOf(request.length() + 5);
             length = String.format("%4s", length).replace(' ', '0');
             request = length + " " + request;
             byte[] msg = request.getBytes();
@@ -688,37 +687,37 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc handle gossip response
      * @param st
+     * @desc handle gossip response
      */
-    public  void handleGossip(StringTokenizer st) {
+    public void handleGossip(StringTokenizer st) {
 
-        if(this.myNeighbours.size()<3){
-            String ip_of_sender=st.nextToken();
-            int port_of_sender= Integer.parseInt(st.nextToken());
-            int no_of_nodes_received=Integer.parseInt(st.nextToken());
+        if (this.addedNeighbours.size() < 3) {
+            String ip_of_sender = st.nextToken();
+            int port_of_sender = Integer.parseInt(st.nextToken());
+            int no_of_nodes_received = Integer.parseInt(st.nextToken());
             ArrayList<String> nodeKeys = new ArrayList<>();
 
-            Node senderNode=new Node(ip_of_sender,port_of_sender,"");
+            Node senderNode = new Node(ip_of_sender, port_of_sender, "");
 
-            for (Node node:this.myNeighbours) {
-                nodeKeys.add(node.ip+":"+node.port);
+            for (Node node : this.addedNeighbours) {
+                nodeKeys.add(node.ip + ":" + node.port);
             }
 
-            if (!nodeKeys.contains(senderNode.getKey())){
-                System.out.println("Node IP " + senderNode.ip + " Port "+senderNode.port+ " was added by Gossip");
+            if (!nodeKeys.contains(senderNode.getKey())) {
+                System.out.println("Node IP " + senderNode.ip + " Port " + senderNode.port + " was added by Gossip");
                 addToRoutingTable(senderNode);
             }
 
-            for (int i=0;i<no_of_nodes_received;i++){
-                Node node=new Node(st.nextToken(),Integer.parseInt(st.nextToken()),"");
+            for (int i = 0; i < no_of_nodes_received; i++) {
+                Node node = new Node(st.nextToken(), Integer.parseInt(st.nextToken()), "");
 
-                if (nodeKeys.contains(node.getKey())){
+                if (nodeKeys.contains(node.getKey())) {
                     continue;
-                }else {
-                    if(!this.blacklist.contains(node.getKey())){
+                } else {
+                    if (!this.blacklist.contains(node.getKey())) {
                         addToRoutingTable(node);
-                        System.out.println("Node IP " + node.ip + " Port "+node.port+ " was added by Gossip");
+                        System.out.println("Node IP " + node.ip + " Port " + node.port + " was added by Gossip");
                     }
                 }
 
@@ -728,32 +727,31 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc process is active message from neighbour nodes
      * @param st
+     * @desc process is active message from neighbour nodes
      */
-    public void checkHeartbeat(StringTokenizer st){
+    public void checkHeartbeat(StringTokenizer st) {
 
-        String ip_of_sender=st.nextToken();
-        int port_of_sender= Integer.parseInt(st.nextToken());
-        Node senderNode=new Node(ip_of_sender,port_of_sender,"");
+        String ip_of_sender = st.nextToken();
+        int port_of_sender = Integer.parseInt(st.nextToken());
+        Node senderNode = new Node(ip_of_sender, port_of_sender, "");
         sendNeighboursToPulseMessage(senderNode);
 
     }
 
 
-
     /**
-     * @desc response to is active request
      * @param nodeToBeSent
+     * @desc response to is active request
      */
-    public void sendNeighboursToPulseMessage(Node nodeToBeSent){
+    public void sendNeighboursToPulseMessage(Node nodeToBeSent) {
         InetAddress myip = null;
         try {
 
             myip = InetAddress.getByName(nodeToBeSent.getIp());
             int port = nodeToBeSent.getPort();
-            String request="ACTIVE "+this.ip+" "+this.port;
-            String length = String.valueOf(request.length()+5);
+            String request = "ACTIVE " + this.ip + " " + this.port;
+            String length = String.valueOf(request.length() + 5);
             length = String.format("%4s", length).replace(' ', '0');
             request = length + " " + request;
             byte[] msg = request.getBytes();
@@ -767,32 +765,31 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc add active responses to hash map
      * @param st
+     * @desc add active responses to hash map
      */
-    public void addPulseNeighbours(StringTokenizer st){
+    public void addPulseNeighbours(StringTokenizer st) {
 
-        String ip_of_sender=st.nextToken();
-        int port_of_sender= Integer.parseInt(st.nextToken());
-        Node senderNode=new Node(ip_of_sender,port_of_sender,"");
-        availableNeighbours.put(senderNode.ip+":"+senderNode.port,senderNode);
+        String ip_of_sender = st.nextToken();
+        int port_of_sender = Integer.parseInt(st.nextToken());
+        Node senderNode = new Node(ip_of_sender, port_of_sender, "");
+        availableNeighbours.put(senderNode.ip + ":" + senderNode.port, senderNode);
 
 
     }
 
 
-    public void addToRoutingTable(Node node){
+    public void addToRoutingTable(Node node) {
         ArrayList<String> nodeKeys = new ArrayList<>();
-        for (Node nodeVal:this.myNeighbours) {
-            nodeKeys.add(nodeVal.ip+":"+nodeVal.port);
+        for (Node nodeVal : this.addedNeighbours) {
+            nodeKeys.add(nodeVal.ip + ":" + nodeVal.port);
         }
-        if (nodeKeys.contains(node.getKey())){
+        if (nodeKeys.contains(node.getKey())) {
             return;
-        }else {
-            this.myNeighbours.add(node);
+        } else {
+            this.addedNeighbours.add(node);
         }
     }
-
 
 
 }

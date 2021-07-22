@@ -66,13 +66,13 @@ public class SpringBootRestApplication {
         heartbeat.run();
 
         //start the active checker thread
-        ActiveChecker activeChecker = new ActiveChecker(node1);
-        activeChecker.run();
+        AvailabilityChecker availabilityChecker = new AvailabilityChecker(node1);
+        availabilityChecker.run();
 
         //start listening to commands
         while (true){
             String command = scanner.nextLine();
-            commandHandler.execute(command);
+            commandHandler.handleCommand(command);
         }
 
     }

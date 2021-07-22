@@ -51,9 +51,9 @@ public class Heartbeat extends Thread
 
 	private static void forwardHeartbeatToNeighbours()
 	{
-		if ( !node.myNeighbours.isEmpty() )
+		if ( !node.addedNeighbours.isEmpty() )
 		{
-			ArrayList<Node> allNeighbours = new ArrayList<>( node.myNeighbours );
+			ArrayList<Node> allNeighbours = new ArrayList<>( node.addedNeighbours);
 
 			for ( Node node : allNeighbours )
 			{

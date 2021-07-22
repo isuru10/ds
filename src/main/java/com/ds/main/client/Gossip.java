@@ -37,10 +37,10 @@ public class Gossip extends Thread {
     }
 
     public static void sendGossipsToNeighbours(){ //send gossip to neighbours asking for IPs
-        if (node.myNeighbours.size() <3 ) {
+        if (node.addedNeighbours.size() <3 ) {
 
             ArrayList<Node> allNeighbours = new ArrayList<>();
-            allNeighbours.addAll(node.myNeighbours);
+            allNeighbours.addAll(node.addedNeighbours);
 
 
             for (Node node : allNeighbours) {
