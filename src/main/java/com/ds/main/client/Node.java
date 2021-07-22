@@ -266,9 +266,9 @@ public class Node implements Runnable{
                         handleGossip(st);
                         break;
 
-                    //isactive message from active checker received
-                    case "ISACTIVE":
-                        checkHearBeat(st);
+                    //is_alive message from active checker received
+                    case "IS_ALIVE":
+                        checkHeartbeat(st);
                         break;
                     //active message received
                     case "ACTIVE":
@@ -299,7 +299,7 @@ public class Node implements Runnable{
         msg = length + " " + msg;
         byte b[] = msg.getBytes();     //request to register
 
-        InetAddress ip = InetAddress.getByName("192.168.8.102");
+        InetAddress ip = InetAddress.getByName("192.168.1.207");
         int port = 55555;
 
         DatagramPacket packet = new DatagramPacket(b, b.length, ip, port);
@@ -324,7 +324,7 @@ public class Node implements Runnable{
         msg = length + " " + msg;
         byte b[] = msg.getBytes();     //request to register
 
-        InetAddress ip = InetAddress.getByName("192.168.8.102");
+        InetAddress ip = InetAddress.getByName("192.168.1.207");
         int port = 55555;
 
         DatagramPacket packet = new DatagramPacket(b, b.length, ip, port);
@@ -530,7 +530,7 @@ public class Node implements Runnable{
     }
 
     /**
-     * @desc download file
+     * @desc downloadFile file
      * @param ip
      * @param port
      * @param name
@@ -541,7 +541,7 @@ public class Node implements Runnable{
         try {
             System.out.println("Startded downloading...");
             //construct URL to send files
-            URL url = new URL("http://"+ip+":"+port+"/files/download?name="+name);
+            URL url = new URL("http://"+ip+":"+port+"/files/downloadFile?name="+name);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");        //creating a GET request
 
@@ -731,7 +731,7 @@ public class Node implements Runnable{
      * @desc process is active message from neighbour nodes
      * @param st
      */
-    public void checkHearBeat(StringTokenizer st){
+    public void checkHeartbeat(StringTokenizer st){
 
         String ip_of_sender=st.nextToken();
         int port_of_sender= Integer.parseInt(st.nextToken());

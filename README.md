@@ -12,5 +12,5 @@ This project constructs a simple overlayed p2p file sharing network on top of LA
 * Ex: search harry potter
 
 ## Downloading
-* download ip port filename
-* Ex: download 192.168.43.157 8000 harry potter
+* downloadFile ip port filename
+* Ex: downloadFile 192.168.43.157 8000 harry potter

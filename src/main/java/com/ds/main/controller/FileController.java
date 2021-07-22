@@ -24,93 +24,67 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/files")
-public class FileController {
-    @Autowired
-    FileService fileService;
+public class FileController
+{
 
-    /**
-     * @desc get all files
-     * @return
-     * @throws IOException
-     */
-    @RequestMapping("/all")
-    public String[] getAll() throws IOException {
-        return fileService.getAllServingFiles();
-    }
+	@Autowired
+	private FileService fileService;
 
-    /**
-     * @desc get a single file
-     * @param name
-     * @return
-     */
-    @RequestMapping("/file")
-    public HashMap<String, String> getOne(@RequestParam(value="name") String name){
-        HashMap<String, String> map = new HashMap<>();
-        map.put("name", fileService.getFile(name));
-        return map;
-    }
+	@RequestMapping("/file")
+	public HashMap<String, String> fetchOneFile( @RequestParam(value = "name") String name )
+	{
+		HashMap<String, String> map = new HashMap<>();
+		map.put( "name", fileService.getFile( name ) );
+		return map;
+	}
 
-    /**
-     * @desc download a file
-     * @param name
-     * @return
-     * @throws IOException
-     * @throws NoSuchAlgorithmException
-     */
-    @RequestMapping(path = "/download", method = RequestMethod.GET)
-    public ResponseEntity<Resource> download(@RequestParam(value="name") String name) throws IOException, NoSuchAlgorithmException {
-        String[] servingFiles = fileService.getAllServingFiles();
-        boolean isIncluded = false;
-        for(String i: servingFiles){
-            if(i.equalsIgnoreCase(name)){
-                isIncluded = true;
-                break;
-            }
-        }
-        //check if file is srving
-        if (isIncluded) {
-            Random rand = new Random();
-            int fileSize = (2 + rand.nextInt(8)) * 1024 * 1024;
-            char[] chars = new char[fileSize];
-            Arrays.fill(chars, 'a');
+	@RequestMapping("/all")
+	public String[] fetchAllFiles() throws IOException
+	{
+		return fileService.getAllServingFiles();
+	}
 
-            String writingStr = new String(chars);
+	@RequestMapping(path = "/downloadFile", method = RequestMethod.GET)
+	public ResponseEntity<Resource> downloadFile( @RequestParam(value = "name") String name )
+			throws IOException, NoSuchAlgorithmException
+	{
 
-            //calculate hash
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(writingStr.getBytes(StandardCharsets.UTF_8));
-            String encoded = Base64.getEncoder().encodeToString(hash);
+		String[] servingFiles = fileService.getAllServingFiles();
 
-            System.out.println("File: " + name + "\nFile Size:" + fileSize / (1024 * 1024) + "Mb\nHash:" + encoded);
+		boolean isFileAvailable = false;
+		for ( String i : servingFiles )
+		{
+			if ( i.equalsIgnoreCase( name ) )
+			{
+				isFileAvailable = true;
+				break;
+			}
+		}
 
-            //create random file
-//            ClassLoader classLoader = getClass().getClassLoader();
-//            String fileName = classLoader.getResource(".").getFile().split("target")[0].substring(1) + "src/main/resources/static/created_files/"+name+".txt";
-            String workingDirectory = System.getProperty("user.dir");
-            String target = workingDirectory + "/src/main/resources/static/created_files/" + name + ".txt";
-            BufferedWriter writer = new BufferedWriter(new FileWriter(target));
-            writer.write(writingStr);
+		if ( isFileAvailable )
+		{
 
-            writer.close();
+			HttpHeaders headers = new HttpHeaders();
+			String headerValue = "attachment; filename=" + name + ".txt";
+			headers.add( HttpHeaders.CONTENT_DISPOSITION, headerValue );
 
-            HttpHeaders headers = new HttpHeaders();
-            String headerValue = "attachment; filename=" + name + ".txt";
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, headerValue);
+			String target = fileService.createRandomFile( name );
 
-            File file = ResourceUtils.getFile(target);
-//        InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+			File file = ResourceUtils.getFile( target );
+			Path path = Paths.get( file.getAbsolutePath() );
+			ByteArrayResource resource = new ByteArrayResource( Files.readAllBytes( path ) );
 
-            Path path = Paths.get(file.getAbsolutePath());
-            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
-            //send created file
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .contentLength(file.length())
-                    .contentType(MediaType.parseMediaType("application/octet-stream"))
-                    .body(resource);
-        } else{
-            System.out.println("File does not exists!");
-        }
-        return null;
-    }
+			//send created file
+			return ResponseEntity.ok()
+					.headers( headers )
+					.contentLength( file.length() )
+					.contentType( MediaType.parseMediaType( "application/octet-stream" ) )
+					.body( resource );
+		}
+		else
+		{
+			System.out.println( "File does not exists!" );
+		}
+		return null;
+	}
 }
