@@ -1,7 +1,7 @@
 package com.ds.main;
 
 import com.ds.main.client.*;
-import com.ds.main.service.FileService;
+//import com.ds.main.service.FileService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -12,7 +12,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Random;
+//import java.util.Random;
 import java.util.Scanner;
 
 @SpringBootApplication
@@ -22,8 +22,8 @@ public class SpringBootRestApplication {
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 
         Scanner scanner = new Scanner(System.in);
-        Random randomNum = new Random();
-        FileService fileService = new FileService();
+        //Random rNum = new Random();
+       // FileService fileService = new FileService();
 
         String ip =  getMyIp();
 
