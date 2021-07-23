@@ -1,5 +1,6 @@
 package com.ds.main.client;
 
+import com.ds.main.util.QueryCounter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.ServletContext;
@@ -8,6 +9,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.util.*;
 
 public class Node implements Runnable {
@@ -37,11 +39,11 @@ public class Node implements Runnable {
         this.port = port;
     }
 
-    public void addResource(String name, String url) {
+    public void addResource(String name) {
         this.resources.add(name);
     }
 
-    public boolean isEqual(String ip, int port) {
+    public boolean equals(String ip, int port) {
         if (this.port == port && this.ip.equals(ip)) {
             return true;
         }
@@ -88,24 +90,12 @@ public class Node implements Runnable {
         return ip;
     }
 
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
     public int getPort() {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public String getUsername() {
         return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     @Override
@@ -121,7 +111,6 @@ public class Node implements Runnable {
      */
     @Override
     public void run() {
-        DatagramSocket socket = null;
         try {
             socket = new DatagramSocket(this.port);
 
@@ -138,7 +127,6 @@ public class Node implements Runnable {
                 byte[] data = incoming.getData();
                 String received = new String(data, 0, incoming.getLength());
                 StringTokenizer st = new StringTokenizer(received, " ");
-                String encodeLength = st.nextToken();
 
                 switch (st.nextToken()) {
 
@@ -154,6 +142,8 @@ public class Node implements Runnable {
 
                     //search message received
                     case "SER":
+                        QueryCounter.increase();
+                        System.out.println("Node: " + getUsername() + "Queries: " + QueryCounter.getCounter());
                         String[] splittedCommand = received.split("\"");
                         String command = splittedCommand[0];
                         String fileName = splittedCommand[1];
@@ -210,6 +200,12 @@ public class Node implements Runnable {
                             System.out.print(cleanedArr.get(i) + " ");
                         }
                         System.out.println("\n----------------------------------------------------");
+
+
+                        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+                        System.out.println("Search end time: " + timestamp);
+
+
                         break;
 
                     //leave message received
@@ -356,7 +352,7 @@ public class Node implements Runnable {
         msg = length + " " + msg;
         byte b[] = msg.getBytes();
 
-        //send message to neighbours to seearch
+        //send message to neighbours to search
         for (Node n : addedNeighbours) {
             int port = n.getPort();
             InetAddress ip = InetAddress.getByName(n.getIp());
@@ -414,7 +410,6 @@ public class Node implements Runnable {
         msg = length + " " + msg;
         byte b[] = msg.getBytes();
         String received = b.toString();
-//        System.out.println("sending found results "+filesStr.trim());
         ds = new DatagramSocket();
 
         InetAddress ip = InetAddress.getByName(receiverIP);
@@ -559,9 +554,6 @@ public class Node implements Runnable {
 
             //if data received write to file
             if (content.toString().length() > 0) {
-//                String path = "static/downloaded";
-//                ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-//                path = classLoader.getResource(path).getPath().split("target")[0].substring(1)+"src/main/resources/static/downloaded/"+name.replace("%20", " ")+".txt";
                 String workingDirectory = System.getProperty("user.dir");
                 String path = workingDirectory + "/src/main/resources/static/downloaded/" + name.replace("%20", " ") + ".txt";
                 FileOutputStream fileOutputStream = new FileOutputStream(path);
@@ -584,8 +576,10 @@ public class Node implements Runnable {
                 byte[] hash = digest.digest(outString.getBytes(StandardCharsets.UTF_8));
                 String encoded = Base64.getEncoder().encodeToString(hash);
                 System.out.println("Downloaded file hash:" + encoded);
+                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+                System.out.println("Download end time: " + timestamp);
             } else {
-                System.out.println("No data retirevied! File not may exist at node");
+                System.out.println("No data retrieved! File not may exist at node");
             }
 
             //handle error cases
@@ -646,7 +640,7 @@ public class Node implements Runnable {
 
         if (this.addedNeighbours.size() > 1) {
             for (Node n : this.addedNeighbours) {
-                if (!senderNode.isEqual(n.getIp(), n.getPort())) {
+                if (!senderNode.equals(n.getIp(), n.getPort())) {
                     neighboursToBeSent += n.getIp() + " " + n.getPort() + " ";
                     count++;
                 } else {

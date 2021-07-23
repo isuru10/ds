@@ -1,7 +1,10 @@
 package com.ds.main.client;
 
+import com.ds.main.util.QueryCounter;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 
 public class CommandHandler {
     private Node node;
@@ -41,6 +44,8 @@ public class CommandHandler {
                 break;
             case "search":
                 try {
+                    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+                    System.out.println("Search start time: " + timestamp);
                     String[] commandArr = command.split(" ");
                     String fileName = "";
                     for (int i = 1; i < commandArr.length; i++)
@@ -58,6 +63,8 @@ public class CommandHandler {
                 break;
             case "downloadFile":
                 try {
+                    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+                    System.out.println("Download start time: " + timestamp);
                     String[] commandArgs = command.split(" ");
                     String ip = commandArgs[1];
                     String port = commandArgs[2];
@@ -72,6 +79,9 @@ public class CommandHandler {
                 } catch (ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException ex) {
                     System.out.println("Illegal command");
                 }
+                break;
+            case "reset":
+                QueryCounter.reset();
                 break;
             default:
                 System.out.println("Command: " + command.split(" ")[0] + " not found!");
