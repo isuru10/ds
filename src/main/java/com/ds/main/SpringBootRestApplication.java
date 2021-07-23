@@ -48,7 +48,7 @@ public class SpringBootRestApplication {
 
         //add the serving resources to node
         for(int i=0; i<servingFiles.length; i++) {
-            node1.addResource(servingFiles[i], "/"+servingFiles[i]);
+            node1.addResource(servingFiles[i]);
         }
         node1.showResources();
 
