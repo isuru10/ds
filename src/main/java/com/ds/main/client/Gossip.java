@@ -16,7 +16,7 @@ public class Gossip extends Thread {
 
     public Gossip(Node nodeRecieve){
         node = nodeRecieve;
-        ds = node.ds;
+        ds = node.datagramSocket;
         socket = node.socket;
     }
 

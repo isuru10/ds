@@ -1,7 +1,7 @@
 package com.ds.main.util;
 
 public class QueryCounter {
-    public static int counter = 0;
+    private static int counter = 0;
 
     public static int getCounter() {
         return counter;

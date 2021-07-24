@@ -21,7 +21,7 @@ public class Heartbeat extends Thread
 	public Heartbeat( Node receivingNode )
 	{
 		node = receivingNode;
-		ds = node.ds;
+		ds = node.datagramSocket;
 		socket = node.socket;
 	}
 

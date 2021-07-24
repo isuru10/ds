@@ -20,7 +20,7 @@ public class AvailabilityChecker extends Thread {
 
     public AvailabilityChecker(Node receiverNode) {
         node = receiverNode;
-        ds = node.ds;
+        ds = node.datagramSocket;
         socket = node.socket;
     }
 
