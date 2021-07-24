@@ -16,7 +16,7 @@ public class CommandHandler {
     public void handleCommand(String command) throws IOException, NoSuchAlgorithmException {
         switch (command.split(" ")[0]) {
             case "routes":
-                node.showRoutingTable();
+                node.printRoutingTable();
                 break;
             case "unregister":
                 try {
@@ -75,7 +75,7 @@ public class CommandHandler {
 
                     fileName = new StringBuilder(fileName.substring(0, fileName.length() - 3));
                     System.out.println("File name: " + fileName);
-                    node.download(ip, port, fileName.toString());
+                    node.downloadFile(ip, port, fileName.toString());
                 } catch (ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException ex) {
                     System.out.println("Illegal command");
                 }
